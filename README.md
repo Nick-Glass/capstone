@@ -5,53 +5,53 @@ Nick Glass
 
 Overview:
 
-For this project I decided to only focus on 5 on 5 offense and 5 on 5 defense broken down by forwards and defensemen since this is the most common state of the game. Also, I decided to focus on only regression models to predict the amount of goals the players will score the next season not the amount of goals the player will create. For the models that predict how the player will prevent goals I decided to predict how many goals are scored against the players team when that player is on the ice. After making these changes my new goal for the project was to become more familiar with hockey analytics models and regression methods so I can build more complex models in the future.
+This was my capstone project for my undergrad where I predicted NHL goals for players in the next season. For this project I decided to only focus on 5 on 5 offense and 5 on 5 defense broken down by forwards and defensemen since this is the most common state of the game. Also, I decided to focus on only regression models to predict the amount of goals the players will score the next season not the amount of goals the player will create. For the models that predict how the player will prevent goals I decided to predict how many goals are scored against the players team when that player is on the ice. After making these changes my new goal for the project was to become more familiar with hockey analytics models and regression methods so I can build more complex models in the future.
 
 The data for this project is from Natural Stat Trick.
 
-# Load NHL individual stats 2013-14
-## 2013-14 ##
+## Load NHL individual stats 2013-14
+### 2013-14
 IND_5V5_13_14 <- read_csv("Player_Season_Totals_13_14_IND_5V5.csv",
                           col_types = "cccciniiiiininniiiiiiiiiiiiiiiiiiin")
 head(IND_5V5_13_14)
 
-# Delete unnecessary columns
+Delete unnecessary columns
 IND_5V5_13_14 <- IND_5V5_13_14[,-1]
 
-# Load NHL on-ice stats 2013-14
+Load NHL on-ice stats 2013-14
 OI_5V5_13_14 <- read_csv("Player_Season_Totals_13_14_OI_5V5.csv",
                          col_types = "cccciniiniiniiniinnnniiniiniiniiniiniiniinnnniiiiniiin")
 head(OI_5V5_13_14)
 
-# Delete unnecessary columns
+Delete unnecessary columns
 OI_5V5_13_14 <- OI_5V5_13_14[, -c(1,3,4,5,6)]
 
-# Join the two tables for 2013-14
+Join the two tables for 2013-14
 Data_13_14 <- merge(x=IND_5V5_13_14,y=OI_5V5_13_14,by="Player",all=TRUE)
 head(Data_13_14)
 
-# Join the two tables for 2018-19
+Join the two tables for 2018-19
 Data_18_19 <- merge(x=IND_5V5_18_19,y=OI_5V5_18_19,by="Player",all=TRUE)
 
 The data selected is of NHL players from 2013-2019. Each year of data was loaded separately with two data files per season. The above code shows the steps taken to load the data. Each year of data was loaded the same way. One of the types of data includes individual statistics and the other includes counts of statistics while the player was on the ice. These data sets were merged together so there would be only one set of data per year. 
 
 Create the response variables column:
 
-# Combine statistics with the next years actual goals 
-# Find the goals of 2014_15
+### Combine statistics with the next years actual goals 
+Find the goals of 2014_15
 goals14_15 <- Data_14_15 %>%
   dplyr::select(Player, Goals)
 
 head(goals14_15)
 
-# Combine the five seasons worth of data
+### Combine the five seasons worth of data
 hockey_data <- rbind(clean_data13_14, clean_data14_15, clean_data15_16,clean_data16_17, clean_data17_18)
 
 For the models that predict a players offense the data was joined with the count of goals the players scored in the following year. This new column was named future goals and is the response variable for the offensive models. Each of the years were then combined to form a single new data frame that contains all of the necessary information called hockey_data. This data set includes 3646 observations or players and 83 columns or variables.
 
 Preparing the data for the forward offensive model:
 
-# Rename the Goals variables
+### Rename the Goals variables
 hockey_data <- rename(hockey_data, Goals = Goals.x)
 hockey_data <- rename(hockey_data, Future_Goals = Goals.y)
 hockey_data <- rename(hockey_data, First_Assists = `First Assists`)
@@ -63,36 +63,36 @@ hockey_data <- rename(hockey_data, Neu_Zone_Starts = `Neu. Zone Starts`)
 hockey_data <- rename(hockey_data, Def_Zone_Starts = `Def. Zone Starts`)
 hockey_data <- rename(hockey_data, On_The_Fly_Starts = `On The Fly Starts`)
 
-# Find the missing values by column
+### Find the missing values by column
 Missing_values <- sort(colSums(is.na(hockey_data)), decreasing = TRUE)
 Missing_values <- Missing_values[Missing_values > 0]
 print(sort(Missing_values), decreasing = TRUE)
 
-# Prepare the data for the forwards 5v5 offense model
+### Prepare the data for the forwards 5v5 offense model
 Forward_Offense <- hockey_data %>%
   filter(Position == "R"|Position == "L"|Position == "C") %>%
   dplyr::select(Player:Rebounds_Created,Takeaways,On_The_Fly_Starts,Off_Zone_Starts:Def_Zone_Starts,Future_Goals)
 
-# Insert zero for the missing IPP values
+### Insert zero for the missing IPP values
 Forward_Offense$IPP[is.na(Forward_Offense$IPP)] = 0
 
-# Find the dimensions of the data
+Find the dimensions of the data
 dim(Forward_Offense)
 
-# Filtering for games played and teams played
+### Filtering for games played and teams played
 Forward_Offense <- hockey_data %>%
   filter(Position == "R"|Position == "L"|Position == "C", GP > 10) %>%
   filter(str_detect(Team, pattern=",", negate=TRUE)) %>%
   dplyr::select(Player:Rebounds_Created,Takeaways,On_The_Fly_Starts,Off_Zone_Starts:Def_Zone_Starts,Future_Goals)
 
-# Find the dimensions of the data after filtering by GP and Team
+Find the dimensions of the data after filtering by GP and Team
 dim(Forward_Offense)
 
-# Add one goal to the future goals 
+### Add one goal to the future goals 
 Forward_Offense <- Forward_Offense %>%
   mutate(Future_Goals = Future_Goals + 1)
 
-# Drop unwanted columns
+Drop unwanted columns
 Forward_Offense <- Forward_Offense[, -c(7,10,12,13,15)]
 head(Forward_Offense)
 
@@ -100,15 +100,15 @@ Before the regression models could be made there needed to be some preprocessing
 
 Creating the models to predict the forwards offense:
 
-# Regression analysis 
-# Splitting data into training and validation sets
+## Regression analysis 
+Splitting data into training and validation sets
 set.seed(1)
 train.rows.FO <- sample(rownames(Forward_Offense), nrow(Forward_Offense) * 0.7)
 train.data.FO <- Forward_Offense[train.rows.FO, ]
 valid.rows.FO <- setdiff(rownames(Forward_Offense), train.rows.FO)
 valid.data.FO <- Forward_Offense[valid.rows.FO, ]
 
-# Create a MLR model that contains the full desired predictors 
+Create a MLR model that contains the full desired predictors 
 FOM_Full <- lm(Future_Goals ~ Goals + First_Assists + Second_Assists +
                             + IPP + ixG + iFF + iSCF + iHDCF +       
                             Rush_Attempts + Rebounds_Created + 
@@ -116,44 +116,44 @@ FOM_Full <- lm(Future_Goals ~ Goals + First_Assists + Second_Assists +
                             Off_Zone_Starts + Neu_Zone_Starts + 
                             Def_Zone_Starts, data=train.data.FO)
 
-# Summary
+Summary
 summary(FOM_Full) 
 
-# Get list of residuals 
+Get list of residuals 
 Res_FOM_Full <- resid(FOM_Full)
 
-# Produce residual vs. fitted plot
+### Produce residual vs. fitted plot
 plot(fitted(FOM_Full), Res_FOM_Full)
 
-# Add a horizontal line at 0 
+Add a horizontal line at 0 
 abline(0,0)
 
 ![image](https://user-images.githubusercontent.com/113626253/190727314-b1bc6030-4f34-4ce7-bef8-bb52d348446d.png)
 
-# Create Q-Q plot for residuals
+### Create Q-Q plot for residuals
 qqnorm(Res_FOM_Full)
 
-# Add a straight diagonal line to the plot
+Add a straight diagonal line to the plot
 qqline(Res_FOM_Full) 
 
 ![image](https://user-images.githubusercontent.com/113626253/190727381-7b65d2ed-e743-4606-bc9b-0b31f2a5f1ec.png)
 
-# Create density plot of residuals
+### Create density plot of residuals
 plot(density(Res_FOM_Full))
 
 ![image](https://user-images.githubusercontent.com/113626253/190727492-06b2cd53-ec5e-40a8-9667-9df0520871eb.png)
 
-# Calculate the error
+Calculate the error
 accuracy(FOM_Full)
 
-# Out-of-sample Prediction
+## Out-of-sample Prediction
 pred_FOM_Full <- predict(FOM_Full, newdata=valid.data.FO)
 pred_FOM_Full
 
-# Find the error of the validation data
+Find the error of the validation data
 accuracy(pred_FOM_Full, valid.data.FO$Future_Goals)
 
-# Applying Box-Cox transformation to lm object
+### Applying Box-Cox transformation to lm object
 bc.results=boxcox(FOM_Full) # Applying Box-Cox transformation to lm object
 
 ![image](https://user-images.githubusercontent.com/113626253/190727713-2b17967c-e196-4036-b447-2aa5051d3ba6.png)
@@ -168,53 +168,53 @@ lambda_FOM_Full <-lm(sqrt(Future_Goals) ~ Goals + First_Assists +
                       Neu_Zone_Starts +     
                       Def_Zone_Starts,data=train.data.FO)
 
-# Summary
+Summary
 summary(lambda_FOM_Full) 
 
-# Get list of residuals 
+Get list of residuals 
 lambda_Res_FOM_Full <- resid(lambda_FOM_Full)
 
-# Produce residual vs. fitted plot
+Produce residual vs. fitted plot
 plot(fitted(lambda_FOM_Full), lambda_Res_FOM_Full)
 
-# Add a horizontal line at 0 
+Add a horizontal line at 0 
 abline(0,0)
 
 ![image](https://user-images.githubusercontent.com/113626253/190727897-bc220948-84b1-47bb-811b-60cd6b1222a0.png)
 
-# Create Q-Q plot for residuals
+Create Q-Q plot for residuals
 qqnorm(lambda_Res_FOM_Full)
 
-# Add a straight diagonal line to the plot
+Add a straight diagonal line to the plot
 qqline(lambda_Res_FOM_Full) 
 
 ![image](https://user-images.githubusercontent.com/113626253/190727941-aeaa247c-1dea-46c1-b32a-8ef0c3637419.png)
 
-# Create density plot of residuals
+Create density plot of residuals
 plot(density(lambda_Res_FOM_Full))
 
 ![image](https://user-images.githubusercontent.com/113626253/190727994-3cc5ccf5-cea0-4f12-8fa7-41b6ba9acb8f.png)
 
-# Compute VIF
+Compute VIF
 vif(FOM_Full)
 
-# Compute VIF
+Compute VIF
 vif(lambda_FOM_Full)
 
-# Calculate the error
+Calculate the error
 accuracy(lambda_FOM_Full)
 
-# Out-of-sample Prediction
+## Out-of-sample Prediction
 pred_lambda_FOM_Full <- predict(lambda_FOM_Full, newdata=valid.data.FO)
 
-# Undo the previous transformations
+Undo the previous transformations
 Real_pred_lambda_FOM_Full <- pred_lambda_FOM_Full^2 - 1
 Real_pred_lambda_FOM_Full
 
-# Find the error of the validation data
+Find the error of the validation data
 accuracy(Real_pred_lambda_FOM_Full, valid.data.FO$Future_Goals)
 
-# Best subset selection
+## Best subset selection
 best_subset_FOM=regsubsets(sqrt(Future_Goals) ~ Goals + First_Assists +
                            Second_Assists + IPP + ixG + iFF + iSCF + 
                             iHDCF + Rush_Attempts + Rebounds_Created +
@@ -222,17 +222,17 @@ best_subset_FOM=regsubsets(sqrt(Future_Goals) ~ Goals + First_Assists +
                             Off_Zone_Starts + Neu_Zone_Starts +
                           Def_Zone_Starts, data=train.data.FO,nvmax=15)
 
-# Summarize the result
+Summarize the result
 best_summary_FOM=summary(best_subset_FOM)
 best_summary_FOM 
 
-# Find the best Cp
+Find the best Cp
 p=2:16
 Cp=cbind(p,best_summary_FOM$cp) #Pair p and Cp
 colnames(Cp)=c('p','Cp') #Define column names 
 print(Cp)
 
-# Find BIC
+Find BIC
 p=2:16
 BIC=cbind(p,best_summary_FOM$bic) #Pair p and BIC
 colnames(BIC)=c('p','BIC') #Define column names 
@@ -242,7 +242,7 @@ plot(BIC,cex=2,pch=19) # Plot of BIC
 
 ![image](https://user-images.githubusercontent.com/113626253/190728350-0e0a94f1-640c-4e08-bd21-9e82c312cc5d.png)
 
-# Find AIC
+Find AIC
 n=nrow(train.data.FO)
 p=BIC[,1]
 aic=BIC[,2]-p*log(n)+2*p #Need to compute AIC using BIC
@@ -253,73 +253,73 @@ print(AIC)
 ![image](https://user-images.githubusercontent.com/113626253/190728417-ec17794d-6630-4f3a-8607-03ffcf77aa7e.png)
 
 
-# Best Cp Model
+Best Cp Model
 FOM_BestCp <- lm(sqrt(Future_Goals) ~ Goals + First_Assists + iSCF + 
                    Takeaways + On_The_Fly_Starts + Off_Zone_Starts + 
                    Neu_Zone_Starts,data=train.data.FO)
-# Summary
+Summary
 summary(FOM_BestCp)
 
-# Compute VIF
+Compute VIF
 vif(FOM_BestCp)
 
-# Calculate the error
+Calculate the error
 accuracy(FOM_BestCp)
 
-# Out-of-sample Prediction
+### Out-of-sample Prediction
 pred_FOM_BestCp <- predict(FOM_BestCp, newdata=valid.data.FO)
 
-# Undo the previous transformations
+Undo the previous transformations
 Real_pred_FOM_BestCp <- pred_FOM_BestCp^2 - 1
 Real_pred_FOM_BestCp
 
-# Find the error of the validation data
+Find the error of the validation data
 accuracy(Real_pred_FOM_BestCp, valid.data.FO$Future_Goals)
 
-# Best BIC Model
+Best BIC Model
 FOM_BestBIC <- lm(sqrt(Future_Goals) ~ Goals + iSCF + Takeaways + 
                     On_The_Fly_Starts + 
                     Off_Zone_Starts,data=train.data.FO)
-# Summary
+Summary
 summary(FOM_BestBIC)
 
-# Compute VIF
+Compute VIF
 vif(FOM_BestBIC)
 
-# Calculate the error
+Calculate the error
 accuracy(FOM_BestBIC)
 
-# Out-of-sample Prediction
+Out-of-sample Prediction
 pred_FOM_BestBIC <- predict(FOM_BestBIC, newdata = valid.data.FO)
 
-# Undo the previous transformations
+Undo the previous transformations
 Real_pred_FOM_BestBIC <- pred_FOM_BestBIC^2 - 1
 Real_pred_FOM_BestBIC
 
-# Find the error of the validation data
+Find the error of the validation data
 accuracy(Real_pred_FOM_BestBIC, valid.data.FO$Future_Goals)
 
-# Best AIC Model
+Best AIC Model
 FOM_BestAIC <- lm(sqrt(Future_Goals) ~ Goals + First_Assists + iSCF + 
                     Takeaways + On_The_Fly_Starts + Off_Zone_Starts + 
                     Neu_Zone_Starts,data=train.data.FO)
-# Summary
+Summary
 summary(FOM_BestAIC)
 
-# Compute VIF
+Compute VIF
 vif(FOM_BestAIC)
 
-# Calculate the error
+Calculate the error
 accuracy(FOM_BestAIC)
 
-# Out-of-sample Prediction
+Out-of-sample Prediction
 pred_FOM_BestAIC <- predict(FOM_BestAIC, newdata = valid.data.FO)
 
-# Undo the previous transformations
+Undo the previous transformations
 Real_pred_FOM_BestAIC <- pred_FOM_BestAIC^2 - 1
 Real_pred_FOM_BestAIC
 
-# Find the error of the validation data
+Find the error of the validation data
 accuracy(Real_pred_FOM_BestAIC, valid.data.FO$Future_Goals)
 
 I created five different regression models to predict the future goals for the forwards in the NHL. First, I separated the data into the training and validation sets with 70% of the data in the training set and 30% in the later. I then ran the full regression model with the variables being Goals, First_Assists, Second_Assists, IPP, ixG, iFF, iSCF, iHDCF, Rush_Attempts, Rebounds_Created, Takeaways, On_The_Fly_Starts, Off_Zone_Starts, Neu_Zone_Starts, and Def_Zone_Starts. This model had a solid adjusted r-square value but the residuals were not normally distributed. To fix this I ran the box cox transformation to find the ideal lambda and its corresponding transformation which happened to be the square root of the response variable. Next I re-ran the full model with the transformation and got a slightly worse adjusted r-square value but the residuals were fixed. I then ran the best subset model with the transformation to find the Cp, BIC, and AIC models. The Cp model and the AIC model turned out to be the same with 7 predictors which were all significant. The BIC model had 5 predictors with them all significant. After finding the VIF values it can be seen that all three of the sub models did not have multicollinearity but the full models did have issues with it. The last step was to undo the transformation and subtract the extra goal before predicting the future values and their error.
