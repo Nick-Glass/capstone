@@ -1,9 +1,9 @@
 # capstone
 
-Nick Glass
+# Nick Glass
 12/3/2021
 
-Overview:
+## Overview:
 
 This was my capstone project for my undergrad where I predicted NHL goals for players in the next season. For this project I decided to only focus on 5 on 5 offense and 5 on 5 defense broken down by forwards and defensemen since this is the most common state of the game. Also, I decided to focus on only regression models to predict the amount of goals the players will score the next season not the amount of goals the player will create. For the models that predict how the player will prevent goals I decided to predict how many goals are scored against the players team when that player is on the ice. After making these changes my new goal for the project was to become more familiar with hockey analytics models and regression methods so I can build more complex models in the future.
 
@@ -15,36 +15,36 @@ IND_5V5_13_14 <- read_csv("Player_Season_Totals_13_14_IND_5V5.csv",
                           col_types = "cccciniiiiininniiiiiiiiiiiiiiiiiiin")
 head(IND_5V5_13_14)
 
-Delete unnecessary columns
+#### Delete unnecessary columns
 IND_5V5_13_14 <- IND_5V5_13_14[,-1]
 
-Load NHL on-ice stats 2013-14
+#### Load NHL on-ice stats 2013-14
 OI_5V5_13_14 <- read_csv("Player_Season_Totals_13_14_OI_5V5.csv",
                          col_types = "cccciniiniiniiniinnnniiniiniiniiniiniiniinnnniiiiniiin")
 head(OI_5V5_13_14)
 
-Delete unnecessary columns
+#### Delete unnecessary columns
 OI_5V5_13_14 <- OI_5V5_13_14[, -c(1,3,4,5,6)]
 
-Join the two tables for 2013-14
+#### Join the two tables for 2013-14
 Data_13_14 <- merge(x=IND_5V5_13_14,y=OI_5V5_13_14,by="Player",all=TRUE)
 head(Data_13_14)
 
-Join the two tables for 2018-19
+#### Join the two tables for 2018-19
 Data_18_19 <- merge(x=IND_5V5_18_19,y=OI_5V5_18_19,by="Player",all=TRUE)
 
 The data selected is of NHL players from 2013-2019. Each year of data was loaded separately with two data files per season. The above code shows the steps taken to load the data. Each year of data was loaded the same way. One of the types of data includes individual statistics and the other includes counts of statistics while the player was on the ice. These data sets were merged together so there would be only one set of data per year. 
 
-Create the response variables column:
+### Create the response variables column:
 
-### Combine statistics with the next years actual goals 
+#### Combine statistics with the next years actual goals 
 Find the goals of 2014_15
 goals14_15 <- Data_14_15 %>%
   dplyr::select(Player, Goals)
 
 head(goals14_15)
 
-### Combine the five seasons worth of data
+#### Combine the five seasons worth of data
 hockey_data <- rbind(clean_data13_14, clean_data14_15, clean_data15_16,clean_data16_17, clean_data17_18)
 
 For the models that predict a players offense the data was joined with the count of goals the players scored in the following year. This new column was named future goals and is the response variable for the offensive models. Each of the years were then combined to form a single new data frame that contains all of the necessary information called hockey_data. This data set includes 3646 observations or players and 83 columns or variables.
@@ -98,17 +98,17 @@ head(Forward_Offense)
 
 Before the regression models could be made there needed to be some preprocessing. First, some variables were renamed to make them more convenient to work with. Second, the number of missing variables were identified and dealt with. For IPP which is the individual points percentage of the player, some values were NA when they should have been 0. In this case the value of 0 was imputed for the NA values. It turns out that all of the other variables that had missing values were not used anyway in the analysis. Third, the data set was filtered to only included centers, left wings, and right wings, otherwise known as forwards. The full data set for forwards includes 2291 observations or players and 26 columns or variables. In the subset of the data after filtering out players who played with more than one team in a season or played in less then 10 games, there is 1856 observations and 26 variables. After dropping unwanted variables the data set includes Player, Team, Position, GP, TOI, Goals, First Assists, Second Assists, IPP, ixG, iFF, iSCF, iHDCF, Rush_Attempts, Rebounds_Created, Takeaways, On_The_Fly_Starts, Neu_Zone_Starts, Def_Zone_Starts, and Future_Goals. Finally, one goal was added to the Future goals column in order to run the box cox transformation in the future.
 
-Creating the models to predict the forwards offense:
+## Creating the models to predict the forwards offense:
 
 ## Regression analysis 
-Splitting data into training and validation sets
+#### Splitting data into training and validation sets
 set.seed(1)
 train.rows.FO <- sample(rownames(Forward_Offense), nrow(Forward_Offense) * 0.7)
 train.data.FO <- Forward_Offense[train.rows.FO, ]
 valid.rows.FO <- setdiff(rownames(Forward_Offense), train.rows.FO)
 valid.data.FO <- Forward_Offense[valid.rows.FO, ]
 
-Create a MLR model that contains the full desired predictors 
+#### Create a MLR model that contains the full desired predictors 
 FOM_Full <- lm(Future_Goals ~ Goals + First_Assists + Second_Assists +
                             + IPP + ixG + iFF + iSCF + iHDCF +       
                             Rush_Attempts + Rebounds_Created + 
