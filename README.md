@@ -1,4 +1,4 @@
-# capstone
+# Capstone Hockey Project
 
 # Nick Glass
 #### 12/3/2021
