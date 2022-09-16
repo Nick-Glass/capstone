@@ -1,13 +1,13 @@
 # capstone
 
 # Nick Glass
-12/3/2021
+#### 12/3/2021
 
 ## Overview:
 
-This was my capstone project for my undergrad where I predicted NHL goals for players in the next season. For this project I decided to only focus on 5 on 5 offense and 5 on 5 defense broken down by forwards and defensemen since this is the most common state of the game. Also, I decided to focus on only regression models to predict the amount of goals the players will score the next season not the amount of goals the player will create. For the models that predict how the player will prevent goals I decided to predict how many goals are scored against the players team when that player is on the ice. After making these changes my new goal for the project was to become more familiar with hockey analytics models and regression methods so I can build more complex models in the future.
+This was my capstone project for my undergrad where I predicted NHL players goals for the next season. For this project I decided to only focus on 5 on 5 offense and 5 on 5 defense broken down by forwards and defensemen since this is the most common state of the game. Also, I decided to focus on only regression models to predict the amount of goals the players will score the next season not the amount of goals the player will create. For the models that predict how the player will prevent goals I decided to predict how many goals are scored against the players team when that player is on the ice. After making these changes my new goal for the project was to become more familiar with hockey analytics models and regression methods so I can build more complex models in the future.
 
-The data for this project is from Natural Stat Trick.
+The data for this project is from Natural Stat Trick. https://www.naturalstattrick.com/
 
 ## Load NHL individual stats 2013-14
 ### 2013-14
